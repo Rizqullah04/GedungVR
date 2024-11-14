@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A-Frame Loading Screen Example</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        /* Loading Screen Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 9999;
+            
+        }
+        .loading-text {
+            margin-top: 50px; /* Mengatur jarak dari atas */
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff; /* Warna hijau */
+            animation: fadeIn 1s infinite; /* Efek animasi */
+        }
+
+        /* Animasi fadeIn */
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-screen">
+        <div class="loading-text">Loading...</div>
+    </div>
+
+    <a-scene>
+        <a-assets>
+            <a-asset-item id="my-model" src="https://raw.githubusercontent.com/menanthea/project-rv/refs/heads/main/my_project%20(2).glb"></a-asset-item>
+        </a-assets>
+
+        <a-entity id="model" gltf-model="#my-model" position="0 1.5 -5" scale="1 1 1"></a-entity>
+
+        <a-sky color="#ECECEC"></a-sky>
+
+        <!-- Kamera -->
+        <a-entity id="camera" camera look-controls position="0 1.6 0"></a-entity>
+
+        <!-- Keterangan Arah -->
+        <a-entity id="direction-text" position="0 0 -4" text="value: W: Maju, S: Mundur, A: Kiri, D: Kanan, Space: Naik, Shift: Turun; color: #FFF; align: center;"></a-entity>
+
+    </a-scene>
+
+    <script>
+        const loadingScreen = document.getElementById('loading-screen');
+        const model = document.getElementById('model');
+        const camera = document.getElementById('camera');
+        const directionText = document.getElementById('direction-text');
+        const moveSpeed = 0.1; // Kecepatan gerakan
+        const keys = {}; // Untuk menyimpan status tombol
+
+        // Event listener untuk model selesai dimuat
+        model.addEventListener('model-loaded', () => {
+            loadingScreen.style.display = 'none'; // Menyembunyikan loading screen setelah model dimuat
+        });
+
+        // Fungsi untuk menggerakkan model
+        function moveModel() {
+            const position = model.getAttribute('position');
+            const cameraDirection = new THREE.Vector3();
+            const cameraRotation = new THREE.Vector3();
+
+            // Mendapatkan arah kamera
+            camera.object3D.getWorldDirection(cameraDirection);
+            cameraRotation.set(cameraDirection.x, 0, cameraDirection.z).normalize();
+
+            // Mengatur arah gerakan berdasarkan tombol yang ditekan
+            if (keys['w']) { // Maju
+                model.setAttribute('position', `${position.x + cameraRotation.x * moveSpeed} ${position.y} ${position.z + cameraRotation.z * moveSpeed}`);
+            }
+            if (keys['s']) { // Mundur
+                model.setAttribute('position', `${position.x - cameraRotation.x * moveSpeed} ${position.y} ${position.z - cameraRotation.z * moveSpeed}`);
+            }
+            if (keys['a']) { // Kiri (diperbaiki)
+                model.setAttribute('position', `${position.x + cameraRotation.z * moveSpeed} ${position.y} ${position.z - cameraRotation.x * moveSpeed}`);
+            }
+            if (keys['d']) { // Kanan (diperbaiki)
+                model.setAttribute('position', `${position.x - cameraRotation.z * moveSpeed} ${position.y} ${position.z + cameraRotation.x * moveSpeed}`);
+            }
+
+            // Gerakan vertikal
+            if (keys[' ']) { // Naik (Space)
+                model.setAttribute('position', `${position.x} ${position.y + moveSpeed} ${position.z}`);
+            }
+            if (keys['Shift']) { // Turun
+                model.setAttribute('position', `${position.x} ${position.y - moveSpeed} ${position.z}`);
+            }
+
+            // Memperbarui posisi teks arah agar mengikuti kamera
+            const cameraPosition = camera.getAttribute('position');
+            directionText.setAttribute('position', `${cameraPosition.x} ${cameraPosition.y + 1} ${cameraPosition.z - 2}`);
+        }
+
+        // Event listener untuk keyboard
+        window.addEventListener('keydown', (event) => {
+            keys[event.key] = true; // Menandai tombol yang ditekan
+        });
+
+        window.addEventListener('keyup', (event) => {
+            keys[event.key] = false; // Menghapus tanda saat tombol dilepas
+        });
+
+        // Loop untuk menggerakkan model
+        function animate() {
+            moveModel();
+            requestAnimationFrame(animate);
+        }
+
+        animate(); // Memulai animasi
+    </script>
+</body>
+</html>
